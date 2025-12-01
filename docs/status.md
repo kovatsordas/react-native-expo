@@ -1,8 +1,8 @@
 # Sponge Tracker - Development Status
 
 **Last Updated:** December 1, 2025  
-**Current Phase:** Phase 1 - Foundation  
-**Overall Progress:** 0% (Planning Complete)
+**Current Phase:** Phase 1 - Dashboard Development  
+**Overall Progress:** 15% (Main Screen Built)
 
 ---
 
@@ -31,24 +31,27 @@
 
 ### ⏳ Phase 1: Foundation & Core Structure (IN PROGRESS)
 
-#### Step 1.1: Navigation Setup - NOT STARTED
-**Status:** 🔴 Not Started  
+#### Step 1.1: Main Dashboard Screen - COMPLETE
+**Status:** 🟢 Complete  
 **Assigned:** TBD  
 **Estimated:** 2-3 hours  
 **Dependencies:** None
 
 **Checklist:**
-- [ ] Update `app/(app)/(tabs)/_layout.tsx` with 5 tabs
-- [ ] Create `app/(app)/(tabs)/sponges.tsx`
-- [ ] Create `app/(app)/(tabs)/cemetery.tsx`
-- [ ] Create `app/(app)/(tabs)/stats.tsx`
-- [ ] Create `app/(app)/(tabs)/settings.tsx`
-- [ ] Configure tab bar icons
-- [ ] Apply dark theme styling
-- [ ] Test navigation flow
+- [x] Created Oura-inspired dashboard layout
+- [x] Built circular health score with SVG
+- [x] Implemented health score calculation (100 - usageCount * 1.5)
+- [x] Added color-coded status (Optimal/Good/Fair/Replace Soon)
+- [x] Created quick stats display (uses, days)
+- [x] Built "Log Usage" button with increment
+- [x] Added "Lifetime Sponges" stats card
+- [x] Applied dark theme (#0B0E1A background)
+- [x] Installed react-native-svg
+- [x] Added settings icon in header
+- [x] Made layout scrollable
 
 **Blockers:** None  
-**Notes:** Currently only have home screen (Hello Sponge placeholder)
+**Notes:** Main dashboard functional with mock data. Next: Add more stats cards and navigation
 
 ---
 
@@ -182,7 +185,32 @@
 
 ## 📝 Recent Changes
 
-### December 1, 2025
+### December 1, 2025 - Evening Update v2
+- ✅ **Redesigned dashboard to match user mockup**
+  - Fixed badge layout and text visibility
+  - Reduced font sizes to prevent cutoff (number: 24px, label: 11px)
+  - Added lineHeight for proper text centering
+  - Fixed status text in circle (28px with proper container width)
+  - Updated status logic: "Replace" at 0%, "Replace Soon" above 0%
+  - Removed "Lifetime Sponges" card per user request
+  - Yellow badges on dark navy background
+  - Tappable circle + long-press for manual adjustment
+- ✅ Fixed react-redux React 19 compatibility
+- ✅ Installed react-native-svg for circular progress
+
+### December 1, 2025 - Evening Update v1
+- ✅ **Built main dashboard screen (Oura-style)**
+  - Circular health score with SVG animation
+  - Color-coded status (green/cyan/yellow/red)
+  - Health calculation algorithm
+  - Log usage functionality
+  - Quick stats display
+  - Dark theme implementation
+- ✅ Installed react-native-svg
+- ✅ Added settings icon in header
+- ✅ Mock data implementation
+
+### December 1, 2025 - Morning Update
 - ✅ Upgraded to Expo SDK 54
 - ✅ Upgraded to React 19.1.0
 - ✅ Fixed SecureStore web compatibility
@@ -190,7 +218,6 @@
 - ✅ Created development roadmap
 - ✅ Created user flows documentation
 - ✅ Created status tracking document
-- ✅ Simplified home screen to "Hello Sponge" placeholder
 
 ---
 
