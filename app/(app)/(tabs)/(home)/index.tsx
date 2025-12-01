@@ -6,7 +6,12 @@ import { ThemedView } from "@/components/ThemedView";
 import { useSession } from "@/providers/ctx";
 import Svg, { Circle } from "react-native-svg";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import { runOnJS } from "react-native-reanimated";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  runOnJS,
+} from "react-native-reanimated";
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
@@ -39,6 +44,13 @@ export default function DashboardScreen() {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const progress = (healthScore / 100) * circumference;
+
+  // Animation setup
+  const translateX = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }],
+  }));
 
   useEffect(() => {
     navigation.setOptions({ 
@@ -84,8 +96,20 @@ export default function DashboardScreen() {
   const panGesture = Gesture.Pan()
     .onEnd((event) => {
       // Check if user swiped left (negative X translation)
-      if (event.translationX < -50) {
+      if (event.translationX < -50 && usageCount > 0) {
         console.log('Swiped left! Translation:', event.translationX);
+        // Animate left then spring back to center with faster config
+        const outwardConfig = {
+          damping: 200,
+          stiffness: 2000,
+        };
+        const returnConfig = {
+          damping: 200,
+          stiffness: 2000,
+        };
+        translateX.value = withSpring(-80, outwardConfig, () => {
+          translateX.value = withSpring(0, returnConfig);
+        });
         runOnJS(decreaseUsage)();
       }
       // Check if user swiped right (positive X translation)
@@ -122,42 +146,44 @@ export default function DashboardScreen() {
           
           {/* Circular Progress with SVG - Tappable & Swipeable */}
           <GestureDetector gesture={panGesture}>
-            <Pressable 
-              onPress={handleTapCircle}
-              style={styles.circleContainer}
-            >
-              <Svg width={size} height={size}>
-                {/* Background circle */}
-                <Circle
-                  cx={size / 2}
-                  cy={size / 2}
-                  r={radius}
-                  stroke="#1A1F3A"
-                  strokeWidth={strokeWidth}
-                  fill="none"
-                />
-                {/* Progress circle */}
-                <Circle
-                  cx={size / 2}
-                  cy={size / 2}
-                  r={radius}
-                  stroke={status.color}
-                  strokeWidth={strokeWidth}
-                  fill="none"
-                  strokeDasharray={`${progress} ${circumference}`}
-                  strokeLinecap="round"
-                  rotation="-90"
-                  origin={`${size / 2}, ${size / 2}`}
-                />
-              </Svg>
-              
-              {/* Status text only in center */}
-              <View style={styles.scoreTextContainer}>
-                <ThemedText style={[styles.statusTextLarge, { color: status.color }]}>
-                  {status.text}
-                </ThemedText>
-              </View>
-            </Pressable>
+            <Animated.View style={animatedStyle}>
+              <Pressable 
+                onPress={handleTapCircle}
+                style={styles.circleContainer}
+              >
+                <Svg width={size} height={size}>
+                  {/* Background circle */}
+                  <Circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke="#1A1F3A"
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                  />
+                  {/* Progress circle */}
+                  <Circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={radius}
+                    stroke={status.color}
+                    strokeWidth={strokeWidth}
+                    fill="none"
+                    strokeDasharray={`${progress} ${circumference}`}
+                    strokeLinecap="round"
+                    rotation="-90"
+                    origin={`${size / 2}, ${size / 2}`}
+                  />
+                </Svg>
+                
+                {/* Status text only in center */}
+                <View style={styles.scoreTextContainer}>
+                  <ThemedText style={[styles.statusTextLarge, { color: status.color }]}>
+                    {status.text}
+                  </ThemedText>
+                </View>
+              </Pressable>
+            </Animated.View>
           </GestureDetector>
 
           {/* Instruction Text */}
