@@ -5,6 +5,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useSession } from "@/providers/ctx";
 import Svg, { Circle } from "react-native-svg";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { runOnJS } from "react-native-reanimated";
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
@@ -13,15 +15,15 @@ export default function DashboardScreen() {
   // State declarations
   const [usageCount, setUsageCount] = useState(23);
   const [daysActive, setDaysActive] = useState(12);
-  const [showManualInput, setShowManualInput] = useState(false);
-  const [manualCount, setManualCount] = useState(usageCount);
   const [showSettings, setShowSettings] = useState(false);
   
   // Calculate health score (100% at 0 uses, decreases by 1.5% per use)
   const healthScore = Math.max(0, Math.min(100, 100 - (usageCount * 1.5)));
   
-  // Determine status and color based on score
-  const getStatusInfo = (score: number) => {
+  // Determine status and color based on usage count and score
+  const getStatusInfo = (count: number, score: number) => {
+    if (count === 0) return { text: "Brand New", color: "#00FF88" };
+    if (count >= 1 && count <= 5) return { text: "New", color: "#00FF88" };
     if (score >= 70) return { text: "Optimal", color: "#0ACF97" };
     if (score >= 50) return { text: "Good", color: "#00D9FF" };
     if (score >= 30) return { text: "Fair", color: "#FFC043" };
@@ -29,7 +31,7 @@ export default function DashboardScreen() {
     return { text: "Replace", color: "#FF6B9D" };
   };
   
-  const status = getStatusInfo(healthScore);
+  const status = getStatusInfo(usageCount, healthScore);
   
   // Calculate circle parameters for SVG
   const size = 200;
@@ -68,24 +70,30 @@ export default function DashboardScreen() {
     // Add haptic feedback here later
   };
 
-  const handleLongPress = () => {
-    setManualCount(usageCount);
-    setShowManualInput(true);
+  const decreaseUsage = () => {
+    setUsageCount(prev => Math.max(0, prev - 1));
+    console.log('Usage decreased');
   };
 
-  const handleManualAdjust = (amount: number) => {
-    const newCount = Math.max(0, manualCount + amount);
-    setManualCount(newCount);
+  const increaseUsage = () => {
+    setUsageCount(prev => prev + 1);
+    console.log('Usage increased');
   };
 
-  const handleSaveManual = () => {
-    setUsageCount(manualCount);
-    setShowManualInput(false);
-  };
-
-  const handleCancelManual = () => {
-    setShowManualInput(false);
-  };
+  // Pan gesture for swipe detection
+  const panGesture = Gesture.Pan()
+    .onEnd((event) => {
+      // Check if user swiped left (negative X translation)
+      if (event.translationX < -50) {
+        console.log('Swiped left! Translation:', event.translationX);
+        runOnJS(decreaseUsage)();
+      }
+      // Check if user swiped right (positive X translation)
+      if (event.translationX > 50) {
+        console.log('Swiped right! Translation:', event.translationX);
+        runOnJS(increaseUsage)();
+      }
+    });
 
   return (
     <View style={styles.wrapper}>
@@ -112,96 +120,54 @@ export default function DashboardScreen() {
           <View style={styles.healthCard}>
           <ThemedText style={styles.cardTitle}>CURRENT SPONGE HEALTH</ThemedText>
           
-          {/* Circular Progress with SVG - Tappable */}
-          <Pressable 
-            onPress={handleTapCircle}
-            onLongPress={handleLongPress}
-            style={styles.circleContainer}
-          >
-            <Svg width={size} height={size}>
-              {/* Background circle */}
-              <Circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                stroke="#1A1F3A"
-                strokeWidth={strokeWidth}
-                fill="none"
-              />
-              {/* Progress circle */}
-              <Circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                stroke={status.color}
-                strokeWidth={strokeWidth}
-                fill="none"
-                strokeDasharray={`${progress} ${circumference}`}
-                strokeLinecap="round"
-                rotation="-90"
-                origin={`${size / 2}, ${size / 2}`}
-              />
-            </Svg>
-            
-            {/* Status text only in center */}
-            <View style={styles.scoreTextContainer}>
-              <ThemedText style={[styles.statusTextLarge, { color: status.color }]}>
-                {status.text}
-              </ThemedText>
-            </View>
-          </Pressable>
+          {/* Circular Progress with SVG - Tappable & Swipeable */}
+          <GestureDetector gesture={panGesture}>
+            <Pressable 
+              onPress={handleTapCircle}
+              style={styles.circleContainer}
+            >
+              <Svg width={size} height={size}>
+                {/* Background circle */}
+                <Circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  stroke="#1A1F3A"
+                  strokeWidth={strokeWidth}
+                  fill="none"
+                />
+                {/* Progress circle */}
+                <Circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  stroke={status.color}
+                  strokeWidth={strokeWidth}
+                  fill="none"
+                  strokeDasharray={`${progress} ${circumference}`}
+                  strokeLinecap="round"
+                  rotation="-90"
+                  origin={`${size / 2}, ${size / 2}`}
+                />
+              </Svg>
+              
+              {/* Status text only in center */}
+              <View style={styles.scoreTextContainer}>
+                <ThemedText style={[styles.statusTextLarge, { color: status.color }]}>
+                  {status.text}
+                </ThemedText>
+              </View>
+            </Pressable>
+          </GestureDetector>
 
           {/* Instruction Text */}
           <ThemedText style={styles.instructionText}>
-            Tap to log use • Hold to adjust manually
+            Tap or swipe right to increase • Swipe left to decrease
           </ThemedText>
         </View>
 
       </ThemedView>
     </ScrollView>
-
-    {/* Manual Input Modal */}
-    {showManualInput && (
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <ThemedText style={styles.modalTitle}>Adjust Usage Count</ThemedText>
-          
-          <View style={styles.counterContainer}>
-            <Pressable 
-              style={styles.counterButton}
-              onPress={() => handleManualAdjust(-1)}
-            >
-              <ThemedText style={styles.counterButtonText}>−</ThemedText>
-            </Pressable>
-            
-            <ThemedText style={styles.counterValue}>{manualCount}</ThemedText>
-            
-            <Pressable 
-              style={styles.counterButton}
-              onPress={() => handleManualAdjust(1)}
-            >
-              <ThemedText style={styles.counterButtonText}>+</ThemedText>
-            </Pressable>
-          </View>
-
-          <View style={styles.modalButtons}>
-            <Pressable 
-              style={[styles.modalButton, styles.cancelButton]}
-              onPress={handleCancelManual}
-            >
-              <ThemedText style={styles.modalButtonText}>Cancel</ThemedText>
-            </Pressable>
-            
-            <Pressable 
-              style={[styles.modalButton, styles.saveButton]}
-              onPress={handleSaveManual}
-            >
-              <ThemedText style={styles.modalButtonText}>Save</ThemedText>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    )}
 
     {/* Settings Sidebar */}
     {showSettings && (
@@ -366,92 +332,6 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: "#FFFFFF",
-  },
-  modalOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1000,
-  },
-  modalContent: {
-    backgroundColor: "#151B2E",
-    borderRadius: 20,
-    padding: 40,
-    width: "85%",
-    maxWidth: 400,
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    marginBottom: 32,
-    textAlign: "center",
-  },
-  counterContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 40,
-    marginBottom: 40,
-    width: "100%",
-  },
-  counterButton: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#00D9FF",
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  counterButtonText: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#0B0E1A",
-    lineHeight: 36,
-  },
-  counterValue: {
-    fontSize: 56,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-    minWidth: 100,
-    textAlign: "center",
-  },
-  modalButtons: {
-    flexDirection: "row",
-    gap: 16,
-    width: "100%",
-    justifyContent: "center",
-  },
-  modalButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  cancelButton: {
-    backgroundColor: "#1A1F3A",
-    borderWidth: 1,
-    borderColor: "#8B92B0",
-  },
-  saveButton: {
-    backgroundColor: "#00D9FF",
-  },
-  modalButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
     color: "#FFFFFF",
   },
 });
