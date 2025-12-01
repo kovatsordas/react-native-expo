@@ -61,7 +61,7 @@ const Normalize = () => {
           duration: Toast.durations.LONG,
         });
         signOut();
-      } else Toast.show(error, { duration: Toast.durations.LONG });
+      } else Toast.show(error?.message || String(error), { duration: Toast.durations.LONG });
     }
   }, []);
 
@@ -76,7 +76,7 @@ const Normalize = () => {
           duration: Toast.durations.LONG,
         });
         signOut();
-      } else Toast.show(error, { duration: Toast.durations.LONG });
+      } else Toast.show(error?.message || String(error), { duration: Toast.durations.LONG });
     }
   }, []);
 

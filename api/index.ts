@@ -1,6 +1,24 @@
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import { API_URL } from "@/config";
 import Toast from "react-native-root-toast";
+
+// Platform-specific storage helper
+const storage = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === "web") {
+      return localStorage.getItem(key);
+    }
+    return await SecureStore.getItemAsync(key);
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === "web") {
+      localStorage.setItem(key, value);
+    } else {
+      await SecureStore.setItemAsync(key, value);
+    }
+  },
+};
 
 async function fetchWithRetry(url: string, options: {}, retries = 5) {
   try {
@@ -44,9 +62,9 @@ async function fetchWithRetry(url: string, options: {}, retries = 5) {
 }
 
 async function fetchRefreshToken() {
-  // const token = await SecureStore.getItemAsync("token");
-  const refreshToken = await SecureStore.getItemAsync("refreshToken");
-  const randToken = await SecureStore.getItemAsync("randToken");
+  // const token = await storage.getItem("token");
+  const refreshToken = await storage.getItem("refreshToken");
+  const randToken = await storage.getItem("randToken");
 
   const url = API_URL + "refresh-token";
   const method = "POST";
@@ -66,9 +84,9 @@ async function fetchRefreshToken() {
     if (response.error) {
       return { refresh: false };
     } else {
-      await SecureStore.setItemAsync("token", response.token);
-      await SecureStore.setItemAsync("refreshToken", response.refreshToken);
-      await SecureStore.setItemAsync("randToken", response.randToken);
+      await storage.setItem("token", response.token);
+      await storage.setItem("refreshToken", response.refreshToken);
+      await storage.setItem("randToken", response.randToken);
     }
     return { refresh: true, newToken: response.token };
   } catch (error) {
@@ -77,7 +95,7 @@ async function fetchRefreshToken() {
 }
 
 export const fetchApi = async (endpoint = "", method = "GET", data = {}) => {
-  const token = await SecureStore.getItemAsync("token");
+  const token = await storage.getItem("token");
 
   const url = API_URL + endpoint;
   const headers = {

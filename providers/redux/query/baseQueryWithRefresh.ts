@@ -4,6 +4,7 @@ import {
   FetchBaseQueryError,
   fetchBaseQuery,
 } from "@reduxjs/toolkit/query/react";
+import { Platform } from "react-native";
 import { API_URL } from "@/config";
 import * as SecureStore from "expo-secure-store";
 
@@ -13,6 +14,23 @@ interface RefreshTokenResponse {
   randToken: string;
 }
 
+// Platform-specific storage helper
+const storage = {
+  async getItem(key: string): Promise<string | null> {
+    if (Platform.OS === "web") {
+      return localStorage.getItem(key);
+    }
+    return await SecureStore.getItemAsync(key);
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    if (Platform.OS === "web") {
+      localStorage.setItem(key, value);
+    } else {
+      await SecureStore.setItemAsync(key, value);
+    }
+  },
+};
+
 export const baseQueryWithRefresh: BaseQueryFn<
   string | FetchArgs, // args can be a URL string or an object with more options
   unknown, // success type of the response
@@ -21,7 +39,7 @@ export const baseQueryWithRefresh: BaseQueryFn<
   const baseQuery = fetchBaseQuery({
     baseUrl: API_URL,
     prepareHeaders: async (headers) => {
-      const token = await SecureStore.getItemAsync("token");
+      const token = await storage.getItem("token");
       if (token) {
         headers.set("Authorization", `Bearer ${token}`);
         headers.set("Content-Type", "application/json");
@@ -36,8 +54,8 @@ export const baseQueryWithRefresh: BaseQueryFn<
   if (result.error && result.error.status === 401) {
     // response.status == 401 && res.error === "Error_AccessTokenExpired"
     console.log("Access token expired, attempting to refresh...", result);
-    const refreshToken = await SecureStore.getItemAsync("refreshToken");
-    const randToken = await SecureStore.getItemAsync("randToken");
+    const refreshToken = await storage.getItem("refreshToken");
+    const randToken = await storage.getItem("randToken");
 
     if (refreshToken) {
       const refreshResult = await baseQuery(
@@ -57,9 +75,9 @@ export const baseQueryWithRefresh: BaseQueryFn<
         const data = refreshResult.data as RefreshTokenResponse;
         console.log("Refresh response data -----", data);
 
-        await SecureStore.setItemAsync("token", data.token);
-        await SecureStore.setItemAsync("refreshToken", data.refreshToken);
-        await SecureStore.setItemAsync("randToken", data.randToken);
+        await storage.setItem("token", data.token);
+        await storage.setItem("refreshToken", data.refreshToken);
+        await storage.setItem("randToken", data.randToken);
 
         // Retry the original query
         result = await baseQuery(args, api, extraOptions);

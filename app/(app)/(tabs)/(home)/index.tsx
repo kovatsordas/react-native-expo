@@ -1,40 +1,9 @@
-import { useEffect, useCallback, memo } from "react";
-import {
-  Image,
-  StyleSheet,
-  Platform,
-  Pressable,
-  ActivityIndicator,
-} from "react-native";
-import Toast from "react-native-root-toast";
-import { Link, useNavigation } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
-import ParallaxScrollView from "@/components/ParallaxScrollView";
+import { useEffect } from "react";
+import { StyleSheet, Pressable, View } from "react-native";
+import { useNavigation } from "expo-router";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { useSession } from "@/providers/ctx";
-import { useAppSelector, useAppDispatch } from "@/hooks/useRedux";
-import { getUsers, updateUser } from "@/providers/redux/user/userSlice";
-import type { User } from "@/types";
-import { Colors } from "@/constants/Colors";
-
-const UserItem = memo(
-  ({
-    user,
-    updateUserById,
-  }: {
-    user: User;
-    updateUserById: (user: User) => void;
-  }) => (
-    <Pressable
-      key={user.id}
-      style={styles.userList}
-      onPress={() => updateUserById({ ...user })}
-    >
-      <ThemedText>{user.name}</ThemedText>
-    </Pressable>
-  )
-);
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -44,119 +13,54 @@ export default function HomeScreen() {
     navigation.setOptions({ headerShown: false });
   }, [navigation]);
 
-  useFocusEffect(
-    useCallback(() => {
-      getAllUsers();
-    }, [])
-  );
-
-  const dispatch = useAppDispatch();
-  const { users, isFetching } = useAppSelector((state) => state.users);
-
-  const getAllUsers = useCallback(async () => {
-    try {
-      await dispatch(getUsers()).unwrap();
-    } catch (error: any) {
-      if (error === "Error_Attack") {
-        // Error_Attack - Must Log Out
-        Toast.show("Long time no see. Please Login again.", {
-          duration: Toast.durations.LONG,
-        });
-        signOut();
-      } else Toast.show(error, { duration: Toast.durations.LONG });
-    }
-  }, []);
-
-  const updateUserById = useCallback(async ({ id, name }: User) => {
-    try {
-      const user = { id, name: name + new Date().getSeconds() };
-      await dispatch(updateUser(user)).unwrap();
-    } catch (error: any) {
-      if (error === "Error_Attack") {
-        // Error_Attack - Must Log Out
-        Toast.show("Long time no see. Please Login again.", {
-          duration: Toast.durations.LONG,
-        });
-        signOut();
-      } else Toast.show(error, { duration: Toast.durations.LONG });
-    }
-  }, []);
-
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-      headerImage={
-        <Image
-          source={require("@/assets/images/partial-react-logo.png")}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="subtitle">User List</ThemedText>
-        <ThemedText type="default">
-          Fetched by createAsyncThunk & createSlice
+    <ThemedView style={styles.container}>
+      <View style={styles.content}>
+        <ThemedText type="title" style={styles.title}>
+          Hello Sponge
         </ThemedText>
-        <Link href="/normalize" style={styles.btn}>
-          Press here to learn createEntityAdapter
-        </Link>
-        {users && users.length > 0 ? (
-          users.map((user) => (
-            <UserItem
-              key={user.id}
-              user={user}
-              updateUserById={updateUserById}
-            />
-          ))
-        ) : isFetching ? (
-          <ActivityIndicator size="small" color="#00ff00" />
-        ) : (
-          <ThemedText>No User Found </ThemedText>
-        )}
-        <Pressable onPress={signOut} style={styles.logout}>
-          <ThemedText>Log Out</ThemedText>
+        <ThemedText style={styles.subtitle}>
+          Welcome to your sponge tracking app!
+        </ThemedText>
+        <Pressable onPress={signOut} style={styles.logoutButton}>
+          <ThemedText style={styles.logoutText}>Log Out</ThemedText>
         </Pressable>
-      </ThemedView>
-    </ParallaxScrollView>
+      </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    // flexDirection: "row",
+  container: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    gap: 11,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
+  content: {
+    alignItems: "center",
+    gap: 20,
+    padding: 20,
   },
-  btn: {
-    width: "90%",
-    backgroundColor: Colors.ownLight,
-    borderRadius: 7,
-    paddingVertical: 11,
-    color: "white",
-    textAlign: "center",
+  title: {
+    fontSize: 48,
     fontWeight: "bold",
   },
-  userList: {
-    marginVertical: 3,
-    borderColor: Colors.own,
-    borderWidth: 1,
-    width: "80%",
-    paddingVertical: 7,
-    paddingHorizontal: 17,
+  subtitle: {
+    fontSize: 18,
+    textAlign: "center",
+    opacity: 0.7,
   },
-  logout: {
-    borderColor: Colors.ownLight,
-    borderWidth: 1,
-    paddingVertical: 7,
-    paddingHorizontal: 17,
-    borderRadius: 7,
-    marginTop: 7,
+  logoutButton: {
+    marginTop: 40,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#0a7ea4",
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0a7ea4",
   },
 });
